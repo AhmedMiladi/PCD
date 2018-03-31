@@ -1,0 +1,11 @@
+<h2>FxComponent</h2>
+<table>
+	<tr>
+		<td>{{ df[0] }} |</td>
+		<td>{{ timeTable[timeTable.length - 1] | date : 'long' }} |</td>
+		<td>bid: {{ bidTable[bidTable.length - 1] }} |</td>
+		<td>offer: {{ offerTable[offerTable.length - 1] }}</td>
+	</tr>
+</table>
+
+<div #chart ></div>
