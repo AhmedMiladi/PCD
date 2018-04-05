@@ -22,7 +22,7 @@ export class ForexComponent implements OnInit {
 	purchaseDates: Date[] = new Array();
 	investedTable: number[] = new Array();
 
-	obs = Observable.interval(250);
+	obs = Observable.interval(1000);
 
 
 	@ViewChild('chart') el: ElementRef;

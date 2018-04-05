@@ -6,7 +6,7 @@ import { Http } from '@angular/http';
 @Injectable()
 export class DataFetcherService {
 
-	obs = Observable.interval(250);
+	obs = Observable.interval(100);
 	URL = "http://webrates.truefx.com/rates/connect.html?c=EUR/USD&f=csv";
 	dataFeed : string[] = new Array();
 
