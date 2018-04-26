@@ -1,20 +1,12 @@
 <p>you have {{ accountValue }} in your account</p>
-<p> your account value will be: {{ gainLoss * totalInvested }} if you sell now!</p>
-<button (click)="sell()" > Sell! </button>
 
-<table>
+<table *ngIf="timeTable.length">
 	<tr>
 		<td>{{ df[0] }} </td>
 		<td>{{ timeTable[timeTable.length - 1] | date : 'long' }} </td>
-		<td>bid: {{ bidTable[bidTable.length - 1] }} </td>
-		<td>offer: {{ offerTable[offerTable.length - 1] }}</td>
+		<td>bid: {{ closeTable[closeTable.length - 1] }} </td>
 	</tr>
 </table>
-
-<form>
-	<input type="text" name="amount" placeholder="enter investment amount" [(ngModel)] = "investedAmount">
-	<input type="submit" name="enterAmount" value="Submit Amount" (click) = "invest()">
-</form>
 
 <div #chart ></div>
 

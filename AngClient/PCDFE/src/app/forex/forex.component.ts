@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { DataFetcherService } from '../data-fetcher.service';
 import { Observable } from 'rxjs';
+import * as tf from '@tensorflow/tfjs';
 
 
 @Component({
@@ -11,18 +12,17 @@ import { Observable } from 'rxjs';
 	/*responsible for plotting and user operations*/
 export class ForexComponent implements OnInit {
 	df;
-	bidTable: number[] = new Array();
-	offerTable: number[] = new Array();
+  model;
+  latestBid: number;
 	timeTable: Date[] = new Array();
-	investedAmount: string = "0";
-	investedValue: number = 0;
-	gainLoss: number = 0;
-	totalInvested : number = 0;
+  openTable: number[] = new Array();
+  lowTable: number[] = new Array();
+  highTable: number[] = new Array();
+  closeTable: number[] = new Array();
 	accountValue : number = 10000;
 	purchaseDates: Date[] = new Array();
-	investedTable: number[] = new Array();
 
-	obs = Observable.interval(1000);
+	obs = Observable.interval(250);
 
 
 	@ViewChild('chart') el: ElementRef;
@@ -30,24 +30,79 @@ export class ForexComponent implements OnInit {
   constructor(private dataFetcher : DataFetcherService) { }
   //getting and plotting data every 0.25s 
   ngOnInit() {
-  	this.obs.subscribe(x=>{
-  		this.dataFetcher.getDataFeed()
+    let instantMax = 0;
+    let instantMin = 1000000;
+    let lastEntry = 0;
+    let addedOpenElt = false;
+    let addedCloseElt = false;
 
-  		.subscribe(x=>{
-  			this.df = x;
-  			let t = new Date(Number(this.df[1]));
+    this.loadModel('../../assets/model_json/model.json');
 
-  			if( this.timeTable.length == 0 || (t.getTime() != this.timeTable[this.timeTable.length - 1].getTime()) )
-  			{
-  				this.timeTable.push(t);
-  				this.bidTable.push(Number(this.df[2] + this.df[3]));
-  				this.offerTable.push(Number(this.df[4] + this.df[5]));
-  				this.gainLoss = ( this.bidTable[this.bidTable.length - 1] * this.totalInvested) - this.investedValue;
-  				this.basicChart();
-  			}
+  	this.obs.subscribe(tick=>{
+      this.dataFetcher.getDataFeed()
+      .subscribe(x=>{
 
+        this.df = x;
+        let t = new Date();
+        let currentBid = Number(this.df[2] + this.df[3]);
+        let currentOffer = Number(this.df[4] + this.df[5]);
+        let plot = false;
+
+        if(this.timeTable.length > 1){
+          lastEntry = (t.getSeconds() - this.timeTable[this.timeTable.length - 1].getSeconds())%60
+        }
+
+        if(currentBid > instantMax){
+          instantMax = currentBid;
+          if(this.highTable.length > 1){
+            this.highTable[this.highTable.length - 1] = instantMax;
+            if(!plot){plot = true;}
+          }
+        }
+
+        if(currentBid < instantMin){
+          instantMin = currentBid;
+          if(this.lowTable.length > 1){
+           this.lowTable[this.lowTable.length - 1] = instantMin;
+           if(!plot){plot = true;}
+          }
+        }
+
+        if(t.getSeconds() != 0 && addedOpenElt){addedOpenElt = false;}
+        if(t.getSeconds() != 59 && addedCloseElt){addedCloseElt = false;}
+
+        if(t.getSeconds() == 0 && !addedOpenElt || 
+          this.openTable.length <= 1 || lastEntry > 60)
+        {
+          this.openTable.push(currentBid);
+          this.timeTable.push(t);
+          if(!plot){plot = true;}
+          addedOpenElt = true;
+          //console.log("open: ", this.openTable);
+        }
+
+        if(t.getSeconds() == 59 && !addedCloseElt || this.highTable.length <= 1 ||
+          this.lowTable.length <= 1 || this.closeTable.length <= 1 || lastEntry > 60)
+        {
+          this.highTable.push(instantMax);
+          this.lowTable.push(instantMin);
+          this.closeTable.push(currentBid);
+          if(!plot){plot = true;}
+          instantMax = 0;
+          instantMin = 1000000;
+          addedCloseElt = true;
+          /*console.log("high: ", this.highTable);
+          console.log("low: ", this.lowTable);
+          console.log("close: ", this.closeTable);*/
+        }
+
+        if(currentBid != this.closeTable[this.closeTable.length - 1] && this.closeTable.length > 0){
+          this.closeTable[this.closeTable.length - 1] = currentBid;
+          if(!plot){plot = true;}
+        }
+        if(plot){this.basicChart();}
+        
   		});
-
   	});	
   }
 
@@ -58,37 +113,37 @@ export class ForexComponent implements OnInit {
   	
   	const data = [{
   		x: this.timeTable,
-  		y: this.bidTable
-  	}];
+      close: this.closeTable,
+      decreasing: {line: {color: '#7F7F7F'}},
+      high: this.highTable,
+      increasing: {line: {color: '#17BECF'}},
+      line: {color: 'rgba(31,119,180,1)'},
+      low: this.lowTable,
+      open: this.openTable,
+      type: 'candlestick', 
+      xaxis: 'x', 
+      yaxis: 'y',
+      name: 'OHLC'
+    },{
+      x: this.timeTable,
+      y: this.closeTable,
+      type: 'scatter',
+      name: 'close',
+      line: {color: 'rgba(180,119,31,1)', shape: "spline", dash: "dash"},
+    }];
 
   	const style = {
   		margin: {t: 100}
   	};
 
-  	Plotly.plot(element, data, style);
+  	Plotly.plot(element, data, style, {scrollZoom: true});
+  }
+
+  async loadModel(filePath){
+    this.model = await tf.loadModel(filePath);
   }
 
   //adds user operations history and calculating gain/loss
-  invest(){
-  	let iv = Number(this.investedAmount)
-  	if(iv > 0){
-	  	this.investedValue += this.bidTable[this.bidTable.length - 1] * iv;
-  		this.accountValue -= this.bidTable[this.bidTable.length - 1] * iv;
-	  	this.purchaseDates.push(this.timeTable[this.timeTable.length -1]);
-  		this.investedTable.push(iv);
-  		this.totalInvested += iv;
-  	}
-  	this.investedAmount = "0";
-  	console.log(this.investedValue);
-  	console.log(this.totalInvested);
-  	console.log(this.gainLoss);
-  }
-
-  sell(){
-  	this.accountValue += this.gainLoss * this.totalInvested;
-  	this.totalInvested = 0;
-  	this.investedValue = 0;
-  }
 
 
 }
