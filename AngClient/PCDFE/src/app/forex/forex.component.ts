@@ -21,6 +21,7 @@ export class ForexComponent implements OnInit {
   closeTable: number[] = new Array();
 	accountValue : number = 10000;
 	purchaseDates: Date[] = new Array();
+  movingAverageArray: number[] = new Array();
 
 	obs = Observable.interval(250);
 
@@ -36,7 +37,7 @@ export class ForexComponent implements OnInit {
     let addedOpenElt = false;
     let addedCloseElt = false;
 
-    this.loadModel('../../assets/model_json/model.json');
+    //this.loadModel('../../assets/model_json/model.json');
 
   	this.obs.subscribe(tick=>{
       this.dataFetcher.getDataFeed()
@@ -81,7 +82,7 @@ export class ForexComponent implements OnInit {
           //console.log("open: ", this.openTable);
         }
 
-        if(t.getSeconds() == 59 && !addedCloseElt || this.highTable.length <= 1 ||
+        if(t.getSeconds() == 59 && t.getMilliseconds() > 500 && !addedCloseElt || this.highTable.length <= 1 ||
           this.lowTable.length <= 1 || this.closeTable.length <= 1 || lastEntry > 60)
         {
           this.highTable.push(instantMax);
@@ -91,9 +92,20 @@ export class ForexComponent implements OnInit {
           instantMax = 0;
           instantMin = 1000000;
           addedCloseElt = true;
+
+          if(this.closeTable.length > 20){
+            let s = 0;
+            for(let i = this.closeTable.length - 1; i >= this.closeTable.length - 20; i--){
+              s += this.closeTable[i];
+            }
+            this.movingAverageArray.push(s/20);
+          }
+          else{this.movingAverageArray.push(NaN);}
+
           /*console.log("high: ", this.highTable);
           console.log("low: ", this.lowTable);
-          console.log("close: ", this.closeTable);*/
+          console.log("close: ", this.closeTable);
+          console.log("MA: ", this.movingAverageArray);*/
         }
 
         if(currentBid != this.closeTable[this.closeTable.length - 1] && this.closeTable.length > 0){
@@ -111,6 +123,7 @@ export class ForexComponent implements OnInit {
   	const element = this.el.nativeElement;
   	Plotly.purge(element);
   	
+    let rangeStart = (this.timeTable.length >= 20) ? this.timeTable[this.timeTable.length-20]:this.timeTable[0];
   	const data = [{
   		x: this.timeTable,
       close: this.closeTable,
@@ -126,22 +139,26 @@ export class ForexComponent implements OnInit {
       name: 'OHLC'
     },{
       x: this.timeTable,
-      y: this.closeTable,
-      type: 'scatter',
-      name: 'close',
-      line: {color: 'rgba(180,119,31,1)', shape: "spline", dash: "dash"},
+      y: this.movingAverageArray,
+      line: {color: 'rgba(180,119,31,1)', shape: 'spline',  dash: 'solid'},
+      type : 'scatter'
     }];
 
   	const style = {
-  		margin: {t: 100}
+  		margin: {t: 100},
+      dragmode: 'zoom',
+      xaxis: {
+        range: [new Date(Number(rangeStart) - 30000), 
+        new Date(Number(this.timeTable[this.timeTable.length-1]) + 30000)]
+      }
   	};
 
   	Plotly.plot(element, data, style, {scrollZoom: true});
   }
 
-  async loadModel(filePath){
+  /*async loadModel(filePath){
     this.model = await tf.loadModel(filePath);
-  }
+  }*/
 
   //adds user operations history and calculating gain/loss
 
