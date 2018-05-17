@@ -1,4 +1,4 @@
-<p>you have {{ accountValue }} in your account</p>
+<!--<p>you have {{ accountValue }} in your account</p>
 
 <table *ngIf="timeTable.length">
 	<tr>
@@ -6,15 +6,18 @@
 		<td>{{ timeTable[timeTable.length - 1] | date : 'long' }} </td>
 		<td>bid: {{ closeTable[closeTable.length - 1] }} </td>
 	</tr>
-</table>
+</table>-->
+<div *ngIf="loadingModel">Loading model ...
+	<div class="loader" ></div>
+</div>
 
 <div #chart ></div>
 
-<table>
+<!--<table>
 	<td>invest. time:
 		<tr *ngFor = "let t of purchaseDates">{{ t | date : 'short' }}</tr>
 	</td>
 	<td>Amount invested:
 		<tr *ngFor = "let a of investedTable">{{ a }}</tr>
 	</td>
-</table>
+</table>-->
