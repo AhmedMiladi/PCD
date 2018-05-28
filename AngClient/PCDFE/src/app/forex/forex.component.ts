@@ -12,7 +12,6 @@ import * as tf from '@tensorflow/tfjs';
 	/*responsible for plotting and user operations*/
 export class ForexComponent implements OnInit {
   model;
-  latestBid: number;
 	timeTable: Date[] = new Array();
   openTable: number[] = new Array();
   lowTable: number[] = new Array();
@@ -20,6 +19,8 @@ export class ForexComponent implements OnInit {
   closeTable: number[] = new Array();
 	accountValue : number = 10000;
 	purchaseDates: Date[] = new Array();
+  purchaseAmount = 0;
+  totalPurchase = 0;
   movingAverageArray: number[] = new Array();
   predictionOpen: number[] = new Array();
   predictionHigh: number[] = new Array();
@@ -55,7 +56,8 @@ export class ForexComponent implements OnInit {
     //predictionTensor.print();
 
     //initial model loading
-    this.loadModel('../../assets/model_json/model.json').then(()=>{
+    // ../../assets/model_json/model.json
+    this.loadModel('../../../assets/model_json/model.json').then(()=>{
       this.loadingModel = false;
       console.log("modelLoading = ", this.loadingModel);
       console.log("model : ", this.model);
@@ -295,6 +297,18 @@ export class ForexComponent implements OnInit {
   return matrix[0].map((col, i) => matrix.map(row => row[i]));
 }
   //adds user operations history and calculating gain/loss
+buy(){
+  let bought = Number(this.purchaseAmount) * this.closeTable[this.closeTable.length-1];
+  this.totalPurchase += bought;
+  this.accountValue -= bought;
+  console.log("you bought ", bought);
+  this.purchaseAmount = 0;
+}
 
+sell(){
+  this.accountValue += this.totalPurchase * this.closeTable[this.closeTable.length-1];
+  this.totalPurchase = 0;
+  console.log(this.totalPurchase)
+}
 
 }

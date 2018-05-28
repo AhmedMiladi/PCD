@@ -1,23 +1,14 @@
-<!--<p>you have {{ accountValue }} in your account</p>
+<p>you have {{ accountValue }} USD in your account</p>
 
-<table *ngIf="timeTable.length">
-	<tr>
-		<td>{{ df[0] }} </td>
-		<td>{{ timeTable[timeTable.length - 1] | date : 'long' }} </td>
-		<td>bid: {{ closeTable[closeTable.length - 1] }} </td>
-	</tr>
-</table>-->
+
 <div *ngIf="loadingModel">Loading model ...
 	<div class="loader" ></div>
 </div>
 
 <div #chart ></div>
 
-<!--<table>
-	<td>invest. time:
-		<tr *ngFor = "let t of purchaseDates">{{ t | date : 'short' }}</tr>
-	</td>
-	<td>Amount invested:
-		<tr *ngFor = "let a of investedTable">{{ a }}</tr>
-	</td>
-</table>-->
+<form>
+	<input type="text" name="amount" placeholder="input the amount to buy" [(ngModel)] = "purchaseAmount">
+</form>
+<button (click) = "buy()" > buy {{ purchaseAmount }}</button>
+<button (click) = "sell()" > sell </button>
